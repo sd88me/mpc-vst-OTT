@@ -1,4 +1,4 @@
-# OTTmpc (vitOTTx for MPC)
+# OTTmpc
 
 An insert-effect port of [vitOTTx](https://github.com/Sakhnovkrg/vitOTTx) (Vital's OTT multiband up/down
 compressor) for MPC OS standalone devices, with an OTT-style skin and live per-band level meters.
