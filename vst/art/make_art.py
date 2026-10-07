@@ -10,7 +10,7 @@ meter/       one image per meter step (the engine's METER_STEPS over METER_MIN_D
 Coordinates here must match layout.conf's (layout y = shadow y - 86).
 """
 import os
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 W, H = 1280, 628
@@ -46,7 +46,7 @@ def bg():
     for cx, cy in [(110, 316), (290, 316), (110, 536), (290, 536),
                    (1080, 206), (1210, 206), (1080, 406), (1080, 586), (1210, 586)]:
         d.rounded_rectangle([cx - 64, cy - 15, cx + 64, cy + 15], radius=8, fill=(44, 50, 56))
-    for y in (124, 294, 464):   # band rows: the level readout's well
+    for y in (124, 294, 464):   # band rows: the level number's well (meter/num_*.png fill it)
         d.rounded_rectangle([408, y - 22, 492, y + 22], radius=6, fill=(12, 30, 34))
     return im
 
@@ -109,6 +109,16 @@ def bar(band, step):
     return im
 
 
+def num(step):
+    """The band's output level as a number in the readout well (84x44), one image per meter step. A picture, not a text
+    readout: text only redraws on a full UpdateDisplay, which closes MPC's PRESET popup (README)."""
+    im = Image.new("RGB", (84, 44), (12, 30, 34))
+    txt = "-inf" if not step else "%.0f" % db_of(step)
+    f = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 24)
+    ImageDraw.Draw(im).text((42, 22), txt, font=f, fill=(232, 238, 240), anchor="mm")
+    return im
+
+
 def strip(step):
     im = Image.new("RGB", (BAR_W, IN_H), (16, 34, 38))
     if step:
@@ -126,6 +136,7 @@ def main():
     for b in THRESH:
         for k in range(STEPS):
             bar(b, k).save(os.path.join(HERE, "meter", "%s_out_%02d.png" % (b, k)))
+            num(k).save(os.path.join(HERE, "meter", "num_%02d.png" % k))
     for k in range(STEPS):
         strip(k).save(os.path.join(HERE, "meter", "in_%02d.png" % k))
 

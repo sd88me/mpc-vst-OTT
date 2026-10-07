@@ -18,7 +18,7 @@ compressor) for MPC OS standalone devices, with an OTT-style skin and live per-b
 - Skin art: `vst/art/make_art.py` (Pillow) draws `vst/art/*.png` to match `vst/layout.conf`; rerun it after changing either.
 
 Note: the live meters redraw through per-value reports only (vst.json `DISPLAY_REV_NO_UPDATE`, a wrapper define not yet upstream); a full-screen UpdateDisplay
-every 100 ms closes MPC's PRESET popup, so the three level readouts (not polled) only refresh when a preset is picked.
+every 100 ms closes MPC's PRESET popup, so the band level numbers are `picture` widgets (`art/meter/num_*.png`, one per meter step, 2.5 dB resolution) like the bars, not text readouts.
 
 Built with the tools in [mpc-vst-plugins](https://github.com/sd88me/mpc-vst-plugins) (a checkout next to this one, or
 `MPC_VST=<path>`; it needs the `build.cflags_arm` vst.json key):
