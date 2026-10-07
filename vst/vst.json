@@ -1,9 +1,9 @@
 {
-  "name": "vitOTTx",
+  "name": "OTTmpc",
   "vendor": "sd88me",
   "uid": "vOTx",
   "version": 1000,
-  "so": "vitottx.so",
+  "so": "ottmpc.so",
   "params": "params.json",
   "layout": "layout.conf",
   "art": "html",
