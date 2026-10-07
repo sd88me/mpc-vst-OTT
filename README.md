@@ -28,4 +28,4 @@ Built with the tools in [mpc-vst-plugins](https://github.com/sd88me/mpc-vst-plug
 
 Licence: GPL-3.0 (`LICENSE`), as upstream.
 
-![Offline skin preview](vst/preview.png) (offline render, meters lit by hand; not a device screenshot)
+![OTTmpc on a Force](docs/screenshot.png) (screenshot from a Force: OTT Default, band meters lit)
