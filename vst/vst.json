@@ -9,7 +9,8 @@
   "art": "html",
   "effect": true,
   "defines": {
-    "HAS_DISPLAY_REV": 1
+    "HAS_DISPLAY_REV": 1,
+    "DISPLAY_REV_NO_UPDATE": 1
   },
   "build": {
     "root": "..",

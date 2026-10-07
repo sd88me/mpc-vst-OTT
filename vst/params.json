@@ -281,19 +281,22 @@
    "key": "h_level",
    "name": "High Level",
    "type": "readout",
-   "display": "string"
+   "display": "string",
+   "poll": false
   },
   {
    "key": "m_level",
    "name": "Mid Level",
    "type": "readout",
-   "display": "string"
+   "display": "string",
+   "poll": false
   },
   {
    "key": "l_level",
    "name": "Low Level",
    "type": "readout",
-   "display": "string"
+   "display": "string",
+   "poll": false
   }
  ]
 }
