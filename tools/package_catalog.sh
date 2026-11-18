@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # The catalog-shaped release zips, from the release build (build/"sd88me - VST - OTTmpc", made by ./build.sh):
 #   dist/OTTmpc-<ver>-mpc-armv7.zip, dist/OTTmpc-<ver>-mpc-aarch64.zip   one per CPU, made by mpc-vst-plugins' tools/release.py
+#   dist/OTTmpc-<ver>-mpc-sdk.zip   one folder for both CPUs (tools/sdk_zip.py, MPC OS 3.10.1+)
 # As 1.0.x, the .so is ottmpc.so at the folder root, so the installer upgrades a 1.0.x install in place; ottmpc-presets.txt (the
 # user presets) is user data, kept on upgrade and uninstall. MPC_VST: an mpc-vst-plugins checkout with tools/release.py.
 set -euo pipefail
@@ -62,5 +63,7 @@ with zipfile.ZipFile(dst, "w", zipfile.ZIP_DEFLATED) as zo:
         zo.writestr(i, data)
 PY
 done
-python3 "$here/tools/scrub_zip.py" "$out"/OTTmpc-"$VER"-mpc-*.zip
+python3 "$here/tools/scrub_zip.py" "$out"/OTTmpc-"$VER"-mpc-armv7.zip "$out"/OTTmpc-"$VER"-mpc-aarch64.zip
+# the one-folder zip for both CPUs (the SDK plugin-folder format, MPC OS 3.10.1+), as Model-72 2.0.0
+python3 "$MPC_VST/tools/sdk_zip.py" "$out/OTTmpc-$VER-mpc-sdk.zip" "$out/OTTmpc-$VER-mpc-armv7.zip" "$out/OTTmpc-$VER-mpc-aarch64.zip"
 ls -la "$out"/OTTmpc-"$VER"-mpc-*.zip

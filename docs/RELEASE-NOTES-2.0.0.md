@@ -19,6 +19,7 @@ A rebuilt OTTmpc with its own native skin, your own presets and a fix for settin
 ## Install
 - `OTTmpc-2.0.0-mpc-aarch64.zip`: 64-bit MPCs (Live III and others).
 - `OTTmpc-2.0.0-mpc-armv7.zip`: the Force and the 32-bit MPCs.
+- `OTTmpc-2.0.0-mpc-sdk.zip`: one plugin folder for every MPC (MPC OS 3.10.1 and later), to copy into `VST2 Plugins` by hand.
 
 Install through the Plugin Manager or run the zip's `install.sh` as root (it stops MPC: save first). It upgrades OTTmpc 1.0 in
 place. Projects, automation and Q-Link assignments from 1.0 load unchanged; a 1.0 project opens with its factory preset, since

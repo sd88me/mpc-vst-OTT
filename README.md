@@ -38,6 +38,7 @@ Through the MPC's Plugin Manager, or by hand with root SSH:
 
 - `OTTmpc-2.0.0-mpc-aarch64.zip`: the 64-bit MPCs (Live III and others).
 - `OTTmpc-2.0.0-mpc-armv7.zip`: the Force and the 32-bit MPCs (Live, Live II, One, X, Key 61).
+- `OTTmpc-2.0.0-mpc-sdk.zip`: one folder for every MPC (MPC OS 3.10.1 and later): copy it into the drive's `VST2 Plugins` folder.
 
 Unzip it, copy the folder to the device and run its `install.sh` (it stops MPC, so save your project first). It upgrades
 an installed OTTmpc 1.0 in place and keeps your user presets on later upgrades. The zip's `INSTALL.md` has the details.
