@@ -19,7 +19,7 @@
 
 namespace vital {
 
-  const Output Processor::null_source_(kMaxBufferSize, kMaxOversample);
+  const Output& Processor::null_source_ = *new Output(kMaxBufferSize, kMaxOversample);
 
   Processor::Processor(int num_inputs, int num_outputs, bool control_rate, int max_oversample) {
     plugging_start_ = 0;

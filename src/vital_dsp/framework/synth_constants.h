@@ -47,6 +47,7 @@ namespace vital {
   constexpr int kDefaultKeyboardOffset = 48;
   constexpr wchar_t kDefaultKeyboardOctaveUp = 'x';
   constexpr wchar_t kDefaultKeyboardOctaveDown = 'z';
+#if 0   // OTTmpc: unused here (src/VENDORED.md change 3)
   const std::wstring kDefaultKeyboard = L"awsedftgyhujkolp;'";
 
   const std::string kPresetExtension = "vital";
@@ -56,6 +57,7 @@ namespace vital {
   const std::string kSkinExtension = "vitalskin";
   const std::string kLfoExtension = "vitallfo";
   const std::string kBankExtension = "vitalbank";
+#endif
 
   namespace constants {
     enum SourceDestination {
@@ -158,6 +160,7 @@ namespace vital {
     const poly_mask kFirstMask = poly_float::equal(kFirstVoiceOne, 1.0f);
     const poly_mask kSecondMask = poly_float::equal(kSecondVoiceOne, 1.0f);
 
+#if 0   // OTTmpc: unused here (src/VENDORED.md change 3)
     const cr::Value kValueZero(0.0f);
     const cr::Value kValueOne(1.0f);
     const cr::Value kValueTwo(2.0f);
@@ -168,5 +171,6 @@ namespace vital {
     const cr::Value kValue2Pi(2.0f * kPi);
     const cr::Value kValueSqrt2(kSqrt2);
     const cr::Value kValueNegOne(-1.0f);
+#endif
   } // namespace constants
 } // namespace vital

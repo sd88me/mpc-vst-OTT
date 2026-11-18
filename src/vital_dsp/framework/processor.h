@@ -308,7 +308,7 @@ namespace vital {
 
       ProcessorRouter* router_;
 
-      static const Output null_source_;
+      static const Output& null_source_;   // OTTmpc: a never-freed heap object (src/VENDORED.md change 2)
 
       JUCE_LEAK_DETECTOR(Processor)
   };

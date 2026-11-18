@@ -1,0 +1,16 @@
+{
+  "name": "OTTmpc",
+  "manufacturer": "sd88me",
+  "version": "2.0.0",
+  "kind": "effect",
+  "uid": "vOTx",
+  "numInputs": 2,
+  "numOutputs": 2,
+  "category": "Dynamics",
+  "file32": "VST/ottmpc-arm32.so",
+  "file64": "VST/ottmpc-arm64.so",
+  "description": "Three-band upward/downward compressor in the style of the classic OTT, built on Vital's multiband compressor.",
+  "author": "sd88me",
+  "url": "https://github.com/sd88me/mpc-vst-OTT",
+  "license": "GPL-3.0"
+}

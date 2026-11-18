@@ -6,6 +6,10 @@
  * Meters: per band, the input and output level (vitOTTx's mean-squared outputs, in dB) as a step index
  * 0..METER_STEPS-1 over METER_MIN_DB..METER_MAX_DB, plus the output level as text; "display_rev" changes
  * whenever one of them moves, so the wrapper (HAS_DISPLAY_REV) tells MPC to redraw. */
+/* zig's arm32 target has NEON: vital's 32-bit NEON path, as src/vital_unit.cpp (the 1.x build passes -DNEON_ARM32 itself) */
+#if defined(__arm__) && (defined(__ARM_NEON) || defined(__ARM_NEON__)) && !defined(NEON_ARM32)
+#define NEON_ARM32 1
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,6 +121,14 @@ void midi(void *, const uint8_t *, int) {}
 
 void set_param(void *inst, const char *key, const char *val) {
     Ott *o = (Ott *)inst;
+    if (!strcmp(key, "sample_rate")) {   /* 2.x: the host's rate (1.x always ran at 44100) */
+        int sr = atoi(val);
+        if (sr >= 8000 && sr <= 384000) {
+            o->comp.setSampleRate(sr);
+            o->comp.reset(vital::constants::kFullMask);
+        }
+        return;
+    }
     for (int i = 0; i < NP; i++)
         if (!strcmp(key, KEYS[i])) { o->p[i] = (float)atof(val); return; }
     /* meters are display only, but a host set (a loaded project, a test) shows until the next meter update */
@@ -151,10 +163,12 @@ int get_param(void *inst, const char *key, char *buf, int n) {
     return 0;
 }
 
-void process(void *inst, const int16_t *in, int16_t *out, int frames) {
-    Ott *o = (Ott *)inst;
+/* One block through the compressor. In / Out read and write the host's samples, scaled to the engine's float level
+ * (1.0 = int16 full scale): the 1.x int16 path and the 2.x float path share everything else. */
+template <class In, class Out>
+void run(Ott *o, In in, Out out, int frames) {
     upd(o);
-    float gi = powf(10.0f, o->p[P_IN] / 20.0f) / 32768.0f, go = powf(10.0f, o->p[P_OUT] / 20.0f) * 32767.0f;
+    float gi = powf(10.0f, o->p[P_IN] / 20.0f), go = powf(10.0f, o->p[P_OUT] / 20.0f);
     for (int off = 0; off < frames;) {
         int ns = frames - off < vital::kMaxBufferSize ? frames - off : vital::kMaxBufferSize;
         for (int i = 0; i < NVALS; i++) o->vals[i]->process(ns);
@@ -162,8 +176,8 @@ void process(void *inst, const int16_t *in, int16_t *out, int frames) {
         for (int i = 0; i < ns; i++) {
             vital::poly_float &v = o->sig_in.buffer[i];
             v = 0.0f;
-            buf[vital::poly_float::kSize * i + 0] = in[2 * (off + i)] * gi;
-            buf[vital::poly_float::kSize * i + 1] = in[2 * (off + i) + 1] * gi;
+            buf[vital::poly_float::kSize * i + 0] = in(off + i, 0) * gi;
+            buf[vital::poly_float::kSize * i + 1] = in(off + i, 1) * gi;
         }
         o->comp.process(ns);
         const vital::mono_float *ob = (const vital::mono_float *)o->comp.output(vital::MultibandCompressor::kAudioOut)->buffer;
@@ -171,14 +185,22 @@ void process(void *inst, const int16_t *in, int16_t *out, int frames) {
             for (int c = 0; c < 2; c++) {
                 float s = ob[vital::poly_float::kSize * i + c] * go;
                 if (!(s == s)) s = 0.0f;   /* NaN guard */
-                out[2 * (off + i) + c] = (int16_t)(s > 32767.0f ? 32767 : s < -32768.0f ? -32768 : lrintf(s));
+                out(off + i, c, s);
             }
         off += ns;
     }
-    if (++o->meter_div >= 4) {   /* ~12 ms: plenty for a 100 ms display poll */
+    if (++o->meter_div >= 4) {   /* ~12 ms at 128 frames: plenty for a 100 ms display poll */
         o->meter_div = 0;
         meters(o);
     }
+}
+
+void process(void *inst, const int16_t *in, int16_t *out, int frames) {
+    run((Ott *)inst, [in](int i, int c) { return in[2 * i + c] / 32768.0f; },
+        [out](int i, int c, float s) {
+            s *= 32767.0f;
+            out[2 * i + c] = (int16_t)(s > 32767.0f ? 32767 : s < -32768.0f ? -32768 : lrintf(s));
+        }, frames);
 }
 
 void render(void *, int16_t *out, int frames) { memset(out, 0, (size_t)frames * 4); }
@@ -188,3 +210,23 @@ const mpc_engine_t ENGINE = {create, destroy, midi, set_param, get_param, render
 }  // namespace
 
 extern "C" const mpc_engine_t *mpc_engine(void) { return &ENGINE; }
+
+/* 2.x: the host's float audio, unclipped (1.x went through int16 and clipped at full scale). Any frame count. */
+extern "C" void ott_process_float(void *inst, const float *inL, const float *inR, float *outL, float *outR, int frames) {
+    const float *ins[2] = {inL, inR ? inR : inL};
+    float *outs[2] = {outL, outR};
+    run((Ott *)inst, [&ins](int i, int c) { return ins[c][i]; },
+        [&outs](int i, int c, float s) { if (outs[c]) outs[c][i] = fabsf(s) < 1e-20f ? 0.0f : s; }, frames);   /* no denormal tail */
+}
+
+/* 2.x: the meter steps in parameter order (h_in, h_out, m_in, m_out, l_in, l_out). Call from the thread that runs process. */
+extern "C" void ott_meters(void *inst, int steps[6]) {
+    Ott *o = (Ott *)inst;
+    for (int b = 0; b < 3; b++) { steps[2 * b] = o->in_step[b]; steps[2 * b + 1] = o->out_step[b]; }
+}
+
+/* 2.x: each band's output level in dB, H, M, L (the meters' source, unstepped). Call from the thread that runs process. */
+extern "C" void ott_levels(void *inst, float db[3]) {
+    Ott *o = (Ott *)inst;
+    for (int b = 0; b < 3; b++) db[b] = o->out_db[b];
+}

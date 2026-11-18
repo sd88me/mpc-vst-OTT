@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Build OTTmpc 2 with the MPC plugin builder (tools/build.py, zig): native test build + arm32 (Force, MPC Gen1) + arm64 (Live III and
+# other 64-bit units), into build/"sd88me - VST - OTTmpc"/. The 1.x wrapper build is still vst/vst.json (mpc-vst-plugins gen_vst.py).
+#   ./build.sh          build
+#   ./build.sh test     build, the offline ASan/UBSan host test (tests/run.sh) and the builder's host_sim
+#   ./build.sh beta     an "OTTmpc 2 Beta" (uid vOTB) build that installs next to the release: build/beta-project/build/...
+# MPC_BUILDER: the plugin builder checkout.
+set -euo pipefail
+here="$(cd "$(dirname "$0")" && pwd)"
+BUILDER="${MPC_BUILDER:?set MPC_BUILDER to the MPC plugin builder checkout}"
+[ -f "$BUILDER/tools/build.py" ] || { echo "need the plugin builder (MPC_BUILDER)" >&2; exit 1; }
+python3 "$here/tools/gen_params.py"
+[ -f "$here/tools/make_tui.py" ] && python3 "$here/tools/make_tui.py"
+
+# The arm32 .so must load on the Force (MPC OS 3.9, glibc 2.29 or older): fail if it asks for a newer glibc symbol.
+glibc_check() {
+  local so="$1" max
+  max="$(readelf -V "$so" | grep -o 'GLIBC_[0-9.]*' | sed 's/GLIBC_//' | sort -uV | tail -n 1)"
+  echo "  $(basename "$so"): newest glibc symbol $max"
+  [ "$(printf '%s\n2.29\n' "$max" | sort -V | tail -n 1)" = 2.29 ] || { echo "$so needs glibc $max > 2.29 (the Force)" >&2; exit 1; }
+}
+
+if [ "${1:-}" = beta ]; then
+  stage="$here/build/beta-project"; rm -rf "$stage"; mkdir -p "$stage"
+  ln -s "$here/src" "$stage/src"
+  [ -d "$here/skins" ] && ln -s "$here/skins" "$stage/skins"
+  python3 - "$here/plugin.json" "$stage/plugin.json" <<'PY'
+import json, sys
+m = json.load(open(sys.argv[1]))
+m.update(name="OTTmpc 2 Beta", uid="vOTB", file32="VST/ottmpc2beta-arm32.so", file64="VST/ottmpc2beta-arm64.so")
+json.dump(m, open(sys.argv[2], "w"), indent=2)
+PY
+  python3 "$BUILDER/tools/build.py" "$stage" --no-ui --define 'OTT_NAME="OTTmpc 2 Beta"' --define "OTT_UID='v','O','T','B'"
+  glibc_check "$stage/build/sd88me - VST - OTTmpc 2 Beta/VST/ottmpc2beta-arm32.so"
+  exit
+fi
+python3 "$BUILDER/tools/build.py" "$here" --no-ui
+glibc_check "$here/build/sd88me - VST - OTTmpc/VST/ottmpc-arm32.so"
+if [ "${1:-}" = test ]; then
+  "$here/tests/run.sh"
+  scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
+  cp "$here/plugin.json" "$scratch/"
+  MPC_PLUGIN_FOLDER="$scratch" "$(ls -d "$BUILDER"/.*-tools | head -n 1)/host_sim" "$here/build/native/ottmpc.so" test --wav "$here/build/test.wav"
+fi
